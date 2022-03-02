@@ -71,6 +71,12 @@ class KLinesAnalyzer:
         return output_arr
 
     def filter_period_by_price(self, period_list, filter_percentage=2):
+        """
+        Get all periods which have the price change in percentage >= filter_percentage
+        :param period_list: List of period
+        :param filter_percentage: The low threshold to filter period
+        :return:
+        """
         filtered_period_list = list()
         for one_period in period_list:
             if self.get_change_percentage(self.klines_array.get_open_price(one_period[0]),
@@ -88,14 +94,14 @@ class KLinesAnalyzer:
         """
         Increase period data structure
         {
-            "start_timestamp": 1111111111,
-            "end_timestamp": 2222222222,
-            "start_price": 2.85,
-            "end_price": 3.15,
-            "increase_percent": 9,
-            "highest_price": 3.30
-            "volume": 123456789,
-            "buy_volume": 11111111.11
+            "start_timestamp": "2022-01-31 01:00:00",
+            "end_timestamp": "2022-01-31 02:15:00",
+            "start_price": 2.3732,
+            "end_price": 2.6104,
+            "increase_percent": 9.99,
+            "volume": 9455258.0,
+            "buy_volume": 4824587.0,
+            "buy_percent": 51.03
         }
         :param period: period start and end index
         :return:
