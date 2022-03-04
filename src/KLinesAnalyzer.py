@@ -37,7 +37,7 @@ class KLinesAnalyzer:
                 temp_percent = np.divide(np.subtract(args[i], base_array), base_array)
                 output_arr = np.append(output_arr, temp_percent)
             else:
-                raise RuntimeError("The type of the input at the {}-th index is not np.ndarray".format(i))
+                raise ValueError("The type of the input at the {}-th index is not np.ndarray".format(i))
 
         return output_arr.reshape(len(args) - compensate_idx, -1).T
 
@@ -123,40 +123,53 @@ class KLinesAnalyzer:
         The method dumps dict data into Json file with the name format is
         "{self.from_time}_(self.to_time)_(self.market)_increase_period.json"
         """
+        # Generate json file for all period
         increase_period = self.get_increase_period(tolerance_percent=0.9)
-        increase_period = self.filter_period_by_price(increase_period, filter_percentage)
-        output_list = list()
+        output_all = list()
         for i in range(increase_period.__len__()):
             temp_dict = self.__create_period_json_data(increase_period[i])
-            output_list.append(temp_dict)
+            output_all.append(temp_dict)
         self.mkdir(self.json_save_path, "data_in_json")
-        json_filename_price = os.path.join(self.json_save_path, "data_in_json",
-                                           "{}_{}_{}_increase_time_sort.json".format(self.from_time.replace(" ", "_"),
-                                                                                     self.to_time.replace(" ", "_"),
-                                                                                     self.coin_market))
-        with open(json_filename_price, "w") as file:
-            json.dump(output_list, file, indent=4)
-            
-        output_list_time = list()
-        self.__sort_period_by_price(increase_period)
-        for i in range(increase_period.__len__()):
-            temp_dict = self.__create_period_json_data(increase_period[i])
-            output_list_time.append(temp_dict)
-        json_filename_time = os.path.join(self.json_save_path, "data_in_json",
-                                          "{}_{}_{}_increase_price_sort.json".format(self.from_time.replace(" ", "_"),
-                                                                                     self.to_time.replace(" ", "_"),
-                                                                                     self.coin_market))
-        with open(json_filename_time, "w") as file:
-            json.dump(output_list_time, file, indent=4)
+        json_all = os.path.join(self.json_save_path, "data_in_json",
+                                "{}_{}_{}_all.json".format(self.from_time.replace(" ", "_"),
+                                                           self.to_time.replace(" ", "_"),
+                                                           self.coin_market))
+        with open(json_all, "w") as file:
+            json.dump(output_all, file, indent=4)
 
-        print("Please refer the json file in {} for Increase period "
-              "sorted by the increase percentage of price from {} to {}".format(json_filename_price,
-                                                                                self.from_time,
-                                                                                self.to_time))
-        print("Please refer the json file in {} for Increase period sorted by time "
-              "from {} to {}".format(json_filename_time,
-                                     self.from_time,
-                                     self.to_time))
+        # Generate json file for filtered period
+        filtered_period = self.filter_period_by_price(increase_period, filter_percentage)
+        output_filtered = list()
+        for i in range(filtered_period.__len__()):
+            temp_dict = self.__create_period_json_data(increase_period[i])
+            output_filtered.append(temp_dict)
+        json_filtered = os.path.join(self.json_save_path, "data_in_json",
+                                     "{}_{}_{}_increase_filtered.json".format(self.from_time.replace(" ", "_"),
+                                                                              self.to_time.replace(" ", "_"),
+                                                                              self.coin_market))
+        with open(json_filtered, "w") as file:
+            json.dump(output_filtered, file, indent=4)
+
+        # Generate json file for filtered period sorted by percentage of price change
+        self.__sort_period_by_price(filtered_period)
+        output_time = list()
+        for i in range(filtered_period.__len__()):
+            temp_dict = self.__create_period_json_data(increase_period[i])
+            output_time.append(temp_dict)
+        json_time = os.path.join(self.json_save_path, "data_in_json",
+                                 "{}_{}_{}_increase_filtered_price_sorted.json".format(self.from_time.replace(" ", "_"),
+                                                                                       self.to_time.replace(" ", "_"),
+                                                                                       self.coin_market))
+        with open(json_time, "w") as file:
+            json.dump(output_time, file, indent=4)
+
+        # Info
+        print("Please refer the json file in {} for filtered increase periods sorted by the "
+              "percentage of price change from {} to {}".format(json_time, self.from_time, self.to_time))
+        print("Please refer the json file in {} for filtered increase periods "
+              "from {} to {}".format(json_time, self.from_time, self.to_time))
+        print("Please refer the json file in {} for all increase periods "
+              "from {} to {}".format(json_all, self.from_time, self.to_time))
 
     def get_increase_period(self, tolerance_percent=0.65):
         """
@@ -188,7 +201,10 @@ class KLinesAnalyzer:
                     cur_accum_change = 0.0
                     highest_accum_change = 0.0
             elif i == length - 1:
-                output_list[-1][1] = i
+                if output_list[-1][0] == i:
+                    output_list.pop()
+                else:
+                    output_list[-1][1] = i
             else:
                 highest_accum_change = cur_accum_change
         return output_list
@@ -224,12 +240,6 @@ class KLinesAnalyzer:
             else:
                 lowest_accum_change = cur_accum_change
         return output_list
-
-    def get_top_threshold(self):
-        return self.interval_idx
-
-    def get_bot_threshold(self):
-        return self.interval_idx
 
     def get_klines(self):
         return self.client.get_historical_klines(self.coin_market, self.get_interval(), self.from_time, self.to_time)

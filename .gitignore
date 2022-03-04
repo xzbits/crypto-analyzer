@@ -1,2 +1,4 @@
 .idea/
 src/__pycache__/
+data_in_json/
+src/Config.py
