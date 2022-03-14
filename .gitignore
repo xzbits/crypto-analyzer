@@ -1,4 +1,6 @@
 .idea/
 src/__pycache__/
 data_in_json/
+json_data_raise/
+json_data_plummet/
 src/Config.py
